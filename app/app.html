@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SplitMate App</title>
+
+  <link rel="manifest" href="../manifest.json" />
+  <meta name="theme-color" content="#047857" />
+
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+
+  <div id="splash" class="splash">
+    <div class="splash-logo"></div>
+    <h1>SplitMate</h1>
+    <p>Loading your trips...</p>
+    <div class="loader"></div>
+  </div>
+
+  <div id="app" class="app hidden">
+
+    <header class="app-header">
+      <button id="backBtn" class="icon-btn hidden">←</button>
+      <h2 id="pageTitle">Dashboard</h2>
+      <button id="profileBtn" class="icon-btn">👤</button>
+    </header>
+
+    <main id="pageContent" class="page-content"></main>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-route="dashboard">🏠<span>Home</span></button>
+      <button class="nav-btn" data-route="trips">🧾<span>Trips</span></button>
+      <button class="nav-btn" data-route="settings">⚙️<span>Settings</span></button>
+    </nav>
+
+  </div>
+
+  <script src="router.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

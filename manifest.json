@@ -1,10 +1,11 @@
 {
   "name": "SplitMate",
   "short_name": "SplitMate",
-  "start_url": "./index.html",
+  "start_url": "./app/app.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "rgb(4, 120, 87)",
+  "theme_color": "#047857",
   "icons": [
     {
       "src": "./icons/icon-192.png",

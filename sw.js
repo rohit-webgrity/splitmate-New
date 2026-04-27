@@ -1,10 +1,14 @@
-const CACHE_NAME = "splitmate-cache-v1";
+const CACHE_NAME = "splitmate-cache-v2";
 
 const urlsToCache = [
   "./index.html",
-  "./style.css",
-  "./app.js",
-  "./manifest.json"
+  "./landing.css",
+  "./landing.js",
+  "./manifest.json",
+  "./app/app.html",
+  "./app/app.css",
+  "./app/app.js",
+  "./app/router.js"
 ];
 
 self.addEventListener("install", (event) => {
