@@ -1,7 +1,6 @@
 const CACHE_NAME = "splitmate-cache-v1";
 
 const urlsToCache = [
-  "./",
   "./index.html",
   "./style.css",
   "./app.js",
