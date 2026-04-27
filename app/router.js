@@ -24,6 +24,46 @@ function getUser() {
   return user ? JSON.parse(user) : null;
 }
 
+function openModal(title, bodyHTML, onConfirm) {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h3>${title}</h3>
+        <button class="modal-close" id="closeModal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        ${bodyHTML}
+      </div>
+
+      <div class="modal-footer">
+        <button class="modal-cancel" id="cancelModal">Cancel</button>
+        <button class="modal-confirm" id="confirmModal">Continue</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  function close() {
+    overlay.remove();
+  }
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) close();
+  });
+
+  document.getElementById("closeModal").addEventListener("click", close);
+  document.getElementById("cancelModal").addEventListener("click", close);
+
+  document.getElementById("confirmModal").addEventListener("click", async () => {
+    await onConfirm(close);
+  });
+}
+
 function calculateBalances(expenses, members) {
   const totalsPaid = {};
   const totalsOwe = {};
@@ -162,72 +202,90 @@ async function fetchTrips(reset = false) {
   }
 }
 
-async function createTrip() {
-  const user = getUser();
-  if (!user) return;
+function createTripModal() {
+  openModal(
+    "Create Trip",
+    `
+      <label>Trip Name</label>
+      <input type="text" id="tripNameInput" placeholder="Goa Trip" />
 
-  const tripName = prompt("Enter Trip Name");
-  if (!tripName) return;
+      <label>Description</label>
+      <textarea id="tripDescInput" placeholder="Trip description..."></textarea>
+    `,
+    async (close) => {
+      const user = getUser();
+      if (!user) return;
 
-  const description = prompt("Enter Trip Description (optional)") || "";
+      const tripName = document.getElementById("tripNameInput").value.trim();
+      const description = document.getElementById("tripDescInput").value.trim();
 
-  const tripCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      if (!tripName) {
+        alert("Trip name required.");
+        return;
+      }
 
-  const tripData = {
-    tripName: tripName.trim(),
-    description: description.trim(),
-    organizerId: user.uid,
-    tripCode,
-    members: [user.uid],
-    createdAt: serverTimestamp()
-  };
+      const tripCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-  await addDoc(collection(db, "trips"), tripData);
+      await addDoc(collection(db, "trips"), {
+        tripName,
+        description,
+        organizerId: user.uid,
+        tripCode,
+        members: [user.uid],
+        createdAt: serverTimestamp()
+      });
 
-  alert("Trip created successfully!");
-  await fetchTrips(true);
+      close();
+      await fetchTrips(true);
+    }
+  );
 }
 
-async function joinTrip() {
-  const user = getUser();
-  if (!user) return;
+function joinTripModal() {
+  openModal(
+    "Join Trip",
+    `
+      <label>Trip Code</label>
+      <input type="text" id="tripCodeInput" placeholder="ABC123" />
+    `,
+    async (close) => {
+      const user = getUser();
+      if (!user) return;
 
-  const tripCode = prompt("Enter Trip Code");
-  if (!tripCode) return;
+      const tripCode = document.getElementById("tripCodeInput").value.trim().toUpperCase();
 
-  const tripsRef = collection(db, "trips");
+      if (!tripCode) {
+        alert("Trip code required.");
+        return;
+      }
 
-  const q = query(
-    tripsRef,
-    where("tripCode", "==", tripCode.trim().toUpperCase()),
-    limit(1)
+      const tripsRef = collection(db, "trips");
+
+      const q = query(tripsRef, where("tripCode", "==", tripCode), limit(1));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        alert("Invalid trip code.");
+        return;
+      }
+
+      const tripDoc = snapshot.docs[0];
+
+      await updateDoc(doc(db, "trips", tripDoc.id), {
+        members: arrayUnion(user.uid)
+      });
+
+      close();
+      await fetchTrips(true);
+    }
   );
-
-  const snapshot = await getDocs(q);
-
-  if (snapshot.empty) {
-    alert("Invalid trip code.");
-    return;
-  }
-
-  const tripDoc = snapshot.docs[0];
-  const tripId = tripDoc.id;
-
-  await updateDoc(doc(db, "trips", tripId), {
-    members: arrayUnion(user.uid)
-  });
-
-  alert("Joined trip successfully!");
-  await fetchTrips(true);
 }
 
 async function fetchTripDetails(tripId) {
   const tripRef = doc(db, "trips", tripId);
   const tripSnap = await getDoc(tripRef);
 
-  if (!tripSnap.exists()) {
-    return null;
-  }
+  if (!tripSnap.exists()) return null;
 
   return { id: tripSnap.id, ...tripSnap.data() };
 }
@@ -247,34 +305,45 @@ async function fetchTripExpenses(tripId) {
   return expenses;
 }
 
-async function addExpense(tripId) {
-  const user = getUser();
-  if (!user) return;
+function addExpenseModal(tripId) {
+  openModal(
+    "Add Expense",
+    `
+      <label>Expense Title</label>
+      <input type="text" id="expenseTitleInput" placeholder="Dinner" />
 
-  const title = prompt("Expense Title (Example: Dinner)");
-  if (!title) return;
+      <label>Amount (₹)</label>
+      <input type="number" id="expenseAmountInput" placeholder="1200" />
+    `,
+    async (close) => {
+      const user = getUser();
+      if (!user) return;
 
-  const amountStr = prompt("Amount (Example: 1200)");
-  if (!amountStr) return;
+      const title = document.getElementById("expenseTitleInput").value.trim();
+      const amount = parseFloat(document.getElementById("expenseAmountInput").value.trim());
 
-  const amount = parseFloat(amountStr);
-  if (isNaN(amount) || amount <= 0) {
-    alert("Invalid amount.");
-    return;
-  }
+      if (!title) {
+        alert("Title required.");
+        return;
+      }
 
-  const expenseData = {
-    title: title.trim(),
-    amount,
-    paidBy: user.uid,
-    splitBetween: [user.uid],
-    createdAt: serverTimestamp()
-  };
+      if (isNaN(amount) || amount <= 0) {
+        alert("Valid amount required.");
+        return;
+      }
 
-  await addDoc(collection(db, "trips", tripId, "expenses"), expenseData);
+      await addDoc(collection(db, "trips", tripId, "expenses"), {
+        title,
+        amount,
+        paidBy: user.uid,
+        splitBetween: [user.uid],
+        createdAt: serverTimestamp()
+      });
 
-  alert("Expense added!");
-  await navigate(`trip-${tripId}`);
+      close();
+      await navigate(`trip-${tripId}`);
+    }
+  );
 }
 
 export const routes = {
@@ -294,8 +363,8 @@ export const routes = {
       `;
     },
     afterRender: async () => {
-      document.getElementById("createTripBtn").addEventListener("click", createTrip);
-      document.getElementById("joinTripBtn").addEventListener("click", joinTrip);
+      document.getElementById("createTripBtn").addEventListener("click", createTripModal);
+      document.getElementById("joinTripBtn").addEventListener("click", joinTripModal);
       await fetchTrips(true);
     }
   },
@@ -393,7 +462,7 @@ export async function navigate(route) {
     `;
 
     document.getElementById("addExpenseBtn").addEventListener("click", () => {
-      addExpense(tripId);
+      addExpenseModal(tripId);
     });
 
     location.hash = route;
