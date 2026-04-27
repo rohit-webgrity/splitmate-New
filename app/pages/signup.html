@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signup - SplitMate</title>
+  <link rel="stylesheet" href="../auth.css" />
+</head>
+<body>
+
+  <div class="popup" id="popup"></div>
+
+  <div class="auth-box">
+    <div class="logo">
+      <div class="logo-icon"></div>
+      <span>SplitMate</span>
+    </div>
+
+    <h2>Create Account</h2>
+    <p>Create your SplitMate account.</p>
+
+    <form id="signupForm">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="fullName" required />
+      </div>
+
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="email" required />
+      </div>
+
+      <div class="form-group">
+        <label>Create Password</label>
+        <input type="password" id="password" required />
+      </div>
+
+      <button type="submit" class="primary-btn">Sign Up</button>
+      <button type="button" id="googleSignup" class="google-btn">Continue with Google</button>
+    </form>
+
+    <div class="bottom-text">
+      Already have an account?
+      <a href="login.html">Sign in</a>
+    </div>
+  </div>
+
+  <script type="module" src="../auth.js"></script>
+</body>
+</html>

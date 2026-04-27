@@ -189,3 +189,21 @@ body {
 .primary-btn:hover {
   background: #036d4f;
 }
+.splash.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+.trip-card {
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.trip-card:hover {
+  transform: translateY(-3px);
+}
+
+.trip-meta {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #444;
+}

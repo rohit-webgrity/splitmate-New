@@ -1,16 +1,32 @@
-window.addEventListener("load", () => {
-  setTimeout(() => {
-    document.getElementById("splash").classList.add("hidden");
-    document.getElementById("app").classList.remove("hidden");
+import { navigate } from "./router.js";
 
-    const route = location.hash.replace("#", "") || "dashboard";
-    navigate(route);
+const user = localStorage.getItem("splitmate_user");
 
-    document.querySelectorAll(".nav-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        navigate(btn.dataset.route);
+if (!user) {
+  location.href = "./pages/login.html";
+}
+
+window.addEventListener("load", async () => {
+  setTimeout(async () => {
+    const splash = document.getElementById("splash");
+    const app = document.getElementById("app");
+
+    splash.classList.add("hide");
+
+    setTimeout(async () => {
+      splash.style.display = "none";
+      app.classList.remove("hidden");
+
+      const route = location.hash.replace("#", "") || "dashboard";
+      await navigate(route);
+
+      document.querySelectorAll(".nav-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          await navigate(btn.dataset.route);
+        });
       });
-    });
 
-  }, 1200);
+    }, 400);
+
+  }, 900);
 });
