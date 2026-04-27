@@ -43,7 +43,7 @@ if (loginForm) {
       saveSession(res.user);
       location.href = "../app.html";
     } catch (err) {
-      showPopup(err.message);
+      showPopup(err.code + " - " + err.message);
     }
   });
 
@@ -53,7 +53,7 @@ if (loginForm) {
       saveSession(res.user);
       location.href = "../app.html";
     } catch (err) {
-      showPopup(err.message);
+      showPopup(err.code + " - " + err.message);
     }
   });
 
@@ -71,7 +71,7 @@ if (loginForm) {
       await sendPasswordResetEmail(auth, email);
       showPopup("A password resetting mail has been sent to your registered mail address.");
     } catch (err) {
-      showPopup(err.message);
+      showPopup(err.code + " - " + err.message);
     }
   });
 }
@@ -98,7 +98,7 @@ if (signupForm) {
       }, 2000);
 
     } catch (err) {
-      showPopup(err.message);
+      showPopup(err.code + " - " + err.message);
     }
   });
 
@@ -108,7 +108,7 @@ if (signupForm) {
       saveSession(res.user);
       location.href = "../app.html";
     } catch (err) {
-      showPopup(err.message);
+      showPopup(err.code + " - " + err.message);
     }
   });
 }
@@ -143,7 +143,7 @@ if (resetForm) {
       }, 2000);
 
     } catch (err) {
-      showPopup(err.message);
+      showPopup(err.code + " - " + err.message);
     }
   });
 }
