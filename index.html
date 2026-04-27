@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SplitMate</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="rgb(4, 120, 87)" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon"></div>
+      <span>SplitMate</span>
+    </div>
+    <button id="installBtn" class="install-btn hidden">Install App</button>
+  </header>
+
+  <main class="hero">
+    <div class="hero-content">
+      <h1>Split bills instantly with your trip group.</h1>
+      <p>
+        SplitMate helps you track expenses, calculate who owes what, and settle payments easily.
+        Perfect for trips, friends, roommates, and group hangouts.
+      </p>
+
+      <div class="hero-buttons">
+        <button id="installBtn2" class="primary-btn hidden">Download App</button>
+        <a href="#features" class="secondary-btn">See Features</a>
+      </div>
+    </div>
+
+    <div class="hero-card">
+      <h3>Trip Example</h3>
+      <div class="expense">
+        <span>Dinner</span>
+        <span>₹1200</span>
+      </div>
+      <div class="expense">
+        <span>Hotel</span>
+        <span>₹5400</span>
+      </div>
+      <div class="expense">
+        <span>Taxi</span>
+        <span>₹650</span>
+      </div>
+
+      <div class="result">
+        <p><strong>Rohit owes:</strong> ₹1450</p>
+        <p><strong>Amit owes:</strong> ₹900</p>
+      </div>
+    </div>
+  </main>
+
+  <section id="features" class="features">
+    <h2>Features</h2>
+
+    <div class="feature-grid">
+      <div class="feature-box">
+        <h3>Trip Expense Tracking</h3>
+        <p>Add expenses and split between members easily.</p>
+      </div>
+
+      <div class="feature-box">
+        <h3>Join Trips via Code</h3>
+        <p>Share trip code and invite your friends instantly.</p>
+      </div>
+
+      <div class="feature-box">
+        <h3>Who Owes Whom</h3>
+        <p>Automatically calculates balances with clean UI.</p>
+      </div>
+
+      <div class="feature-box">
+        <h3>UPI QR Payments</h3>
+        <p>Settle quickly using UPI QR codes and IDs.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>© <span id="year"></span> SplitMate. All rights reserved.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
