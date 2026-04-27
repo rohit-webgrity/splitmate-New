@@ -11,6 +11,7 @@ import {
   addDoc,
   updateDoc,
   doc,
+  getDoc,
   serverTimestamp,
   arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
@@ -21,6 +22,65 @@ let lastVisibleDoc = null;
 function getUser() {
   const user = localStorage.getItem("splitmate_user");
   return user ? JSON.parse(user) : null;
+}
+
+function calculateBalances(expenses, members) {
+  const totalsPaid = {};
+  const totalsOwe = {};
+
+  members.forEach((uid) => {
+    totalsPaid[uid] = 0;
+    totalsOwe[uid] = 0;
+  });
+
+  expenses.forEach((exp) => {
+    totalsPaid[exp.paidBy] += exp.amount;
+
+    const share = exp.amount / exp.splitBetween.length;
+
+    exp.splitBetween.forEach((uid) => {
+      totalsOwe[uid] += share;
+    });
+  });
+
+  const balances = {};
+  members.forEach((uid) => {
+    balances[uid] = totalsPaid[uid] - totalsOwe[uid];
+  });
+
+  const creditors = [];
+  const debtors = [];
+
+  members.forEach((uid) => {
+    if (balances[uid] > 0) creditors.push({ uid, amount: balances[uid] });
+    if (balances[uid] < 0) debtors.push({ uid, amount: -balances[uid] });
+  });
+
+  const settlements = [];
+
+  let i = 0;
+  let j = 0;
+
+  while (i < debtors.length && j < creditors.length) {
+    const debtor = debtors[i];
+    const creditor = creditors[j];
+
+    const payAmount = Math.min(debtor.amount, creditor.amount);
+
+    settlements.push({
+      from: debtor.uid,
+      to: creditor.uid,
+      amount: payAmount
+    });
+
+    debtor.amount -= payAmount;
+    creditor.amount -= payAmount;
+
+    if (debtor.amount <= 0.01) i++;
+    if (creditor.amount <= 0.01) j++;
+  }
+
+  return settlements;
 }
 
 async function fetchTrips(reset = false) {
@@ -80,7 +140,7 @@ async function fetchTrips(reset = false) {
     `;
 
     card.addEventListener("click", () => {
-      alert("Trip page will open in Phase 5.");
+      navigate(`trip-${docSnap.id}`);
     });
 
     document.getElementById("tripList").appendChild(card);
@@ -161,6 +221,62 @@ async function joinTrip() {
   await fetchTrips(true);
 }
 
+async function fetchTripDetails(tripId) {
+  const tripRef = doc(db, "trips", tripId);
+  const tripSnap = await getDoc(tripRef);
+
+  if (!tripSnap.exists()) {
+    return null;
+  }
+
+  return { id: tripSnap.id, ...tripSnap.data() };
+}
+
+async function fetchTripExpenses(tripId) {
+  const expensesRef = collection(db, "trips", tripId, "expenses");
+
+  const q = query(expensesRef, orderBy("createdAt", "desc"));
+  const snapshot = await getDocs(q);
+
+  const expenses = [];
+
+  snapshot.forEach((docSnap) => {
+    expenses.push({ id: docSnap.id, ...docSnap.data() });
+  });
+
+  return expenses;
+}
+
+async function addExpense(tripId) {
+  const user = getUser();
+  if (!user) return;
+
+  const title = prompt("Expense Title (Example: Dinner)");
+  if (!title) return;
+
+  const amountStr = prompt("Amount (Example: 1200)");
+  if (!amountStr) return;
+
+  const amount = parseFloat(amountStr);
+  if (isNaN(amount) || amount <= 0) {
+    alert("Invalid amount.");
+    return;
+  }
+
+  const expenseData = {
+    title: title.trim(),
+    amount,
+    paidBy: user.uid,
+    splitBetween: [user.uid],
+    createdAt: serverTimestamp()
+  };
+
+  await addDoc(collection(db, "trips", tripId, "expenses"), expenseData);
+
+  alert("Expense added!");
+  await navigate(`trip-${tripId}`);
+}
+
 export const routes = {
   dashboard: {
     title: "Dashboard",
@@ -180,20 +296,7 @@ export const routes = {
     afterRender: async () => {
       document.getElementById("createTripBtn").addEventListener("click", createTrip);
       document.getElementById("joinTripBtn").addEventListener("click", joinTrip);
-
       await fetchTrips(true);
-    }
-  },
-
-  trips: {
-    title: "Trips",
-    render: async () => {
-      return `
-        <div class="card">
-          <h3>Trips</h3>
-          <p>Detailed trip list view will come in Phase 5.</p>
-        </div>
-      `;
     }
   },
 
@@ -203,7 +306,7 @@ export const routes = {
       return `
         <div class="card">
           <h3>Settings</h3>
-          <p>Profile settings will be added later.</p>
+          <p>Profile and logout will be added later.</p>
         </div>
       `;
     }
@@ -213,10 +316,94 @@ export const routes = {
 export async function navigate(route) {
   const pageTitle = document.getElementById("pageTitle");
   const pageContent = document.getElementById("pageContent");
+  const backBtn = document.getElementById("backBtn");
+
+  if (!route) route = "dashboard";
+
+  if (route.startsWith("trip-")) {
+    const tripId = route.replace("trip-", "");
+
+    const trip = await fetchTripDetails(tripId);
+    if (!trip) {
+      pageTitle.innerText = "Trip Not Found";
+      pageContent.innerHTML = `
+        <div class="card">
+          <h3>Trip not found</h3>
+        </div>
+      `;
+      return;
+    }
+
+    const expenses = await fetchTripExpenses(tripId);
+    const settlements = calculateBalances(expenses, trip.members);
+
+    pageTitle.innerText = trip.tripName;
+
+    backBtn.classList.remove("hidden");
+    backBtn.onclick = () => navigate("dashboard");
+
+    let expensesHtml = "";
+
+    if (expenses.length === 0) {
+      expensesHtml = `
+        <div class="card">
+          <h3>No expenses yet</h3>
+          <p>Add your first expense.</p>
+        </div>
+      `;
+    } else {
+      expenses.forEach((exp) => {
+        expensesHtml += `
+          <div class="card">
+            <h3>${exp.title}</h3>
+            <p>Amount: ₹${exp.amount}</p>
+          </div>
+        `;
+      });
+    }
+
+    let settlementHtml = "";
+
+    if (settlements.length === 0) {
+      settlementHtml = `
+        <div class="card">
+          <h3>No dues</h3>
+          <p>Everyone is settled.</p>
+        </div>
+      `;
+    } else {
+      settlementHtml += `<div class="card"><h3>Who owes whom</h3>`;
+      settlements.forEach((s) => {
+        settlementHtml += `<p><strong>${s.from}</strong> pays <strong>${s.to}</strong> ₹${s.amount.toFixed(2)}</p>`;
+      });
+      settlementHtml += `</div>`;
+    }
+
+    pageContent.innerHTML = `
+      <div class="card">
+        <h3>Trip Members</h3>
+        <p>Total Members: ${trip.members.length}</p>
+        <p>Trip Code: <strong>${trip.tripCode}</strong></p>
+        <button id="addExpenseBtn" class="primary-btn">Add Expense</button>
+      </div>
+
+      ${expensesHtml}
+
+      ${settlementHtml}
+    `;
+
+    document.getElementById("addExpenseBtn").addEventListener("click", () => {
+      addExpense(tripId);
+    });
+
+    location.hash = route;
+    return;
+  }
 
   if (!routes[route]) route = "dashboard";
 
   pageTitle.innerText = routes[route].title;
+  backBtn.classList.add("hidden");
 
   const html = await routes[route].render();
   pageContent.innerHTML = html;
